@@ -6,13 +6,19 @@
  */
 
 #include "Heap.h"
+#include "AppClasses.h"
 
 int main(int argc, char** argv) {
 
 	Heap* h = new Heap();
-	h->alloc("HELLO");
-	//h->gc(void);
-	h->registerx("hallofu", &h);
+	StudentList::registerMe(h);
+	StudNode::registerMe(h);
+	LectNode::registerMe(h);
+	Student::registerMe(h);
+	Lecture::registerMe(h);
+
+	h->alloc("Student");
+
 	return 0;
 }
 
