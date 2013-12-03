@@ -36,6 +36,7 @@ private:
 	void initHeap();
 	FreeBlock *splitBlock(FreeBlock *block, uint64_t n);
 	bool validateFreeBlock(FreeBlock *block);
+	void merge(FreeBlock *a, FreeBlock *b);
 public:
 	Heap();
 	virtual ~Heap();

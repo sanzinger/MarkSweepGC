@@ -23,6 +23,12 @@ Heap::~Heap() {
 void Heap::alloc(string typeId) {
 }
 
+void Heap::merge(FreeBlock *a, FreeBlock *b) {
+	validateFreeBlock(a);
+	validateFreeBlock(b);
+	// Test if they are really neighbors?
+	// Do the merge
+}
 
 FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
 	if(n % BLOCK_ALIGN != 0) {
