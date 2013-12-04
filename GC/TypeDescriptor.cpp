@@ -34,8 +34,10 @@ void TypeDescriptor::addInteger(string name) {
 }
 
 void TypeDescriptor::typeCompleted() {
-	*this->descPosition = (uint64_t)(this->desc - (uint8_t*)this->descPosition);
-	addToObjectSize(HEAP_SENTINEL_LENGTH);
+	// The sentinel value points points back to the beginning of the type desc block.
+	// This pointer is relative, hence negative
+	int64_t sentinelValue = (int64_t)((int8_t*)this->desc - (int8_t*)this->descPosition);
+	*(int64_t*)this->descPosition = sentinelValue;
 }
 
 string TypeDescriptor::getName() {
