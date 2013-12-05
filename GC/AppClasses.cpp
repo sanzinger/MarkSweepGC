@@ -12,6 +12,10 @@
 #include <cstring>
 #include <iostream>
 #include <list>
+#include <string>
+#include <cstdlib>
+
+#define LECTURE_AMT 16
 
 Heap* AppHeap::h = NULL;
 
@@ -23,8 +27,11 @@ Heap* AppHeap::getInstance() {
 }
 
 string StudentList::TYPE_NAME = "StudentList";
+StudentList::StudentList() {
+	first = NULL;
+}
 
-void StudentList::registerMe(Heap *h) {
+void StudentList::registerMe(Heap* h) {
 	TypeDescriptor *studentList = new TypeDescriptor("StudentList");
 	studentList->addPointer("first");
 	studentList->typeCompleted();
@@ -32,7 +39,7 @@ void StudentList::registerMe(Heap *h) {
 }
 
 void StudentList::add(Student *s) {
-	StudNode* sn = (StudNode*)AppHeap::getInstance()->alloc(StudNode::TYPE_NAME);
+	StudNode* sn = new (AppHeap::getInstance()->alloc(StudNode::TYPE_NAME)) StudNode();
 	sn->stud = s;
 	if(this->first != NULL) {
 		sn->next = this->first;
@@ -56,9 +63,47 @@ void StudentList::remove(Student *s) {
 	}
 }
 
+string StudentList::toString() {
+	string s;
+	s.append("[");
+	StudNode* i = this->first;
+	while(i != NULL) {
+		s += i->stud->toString();
+		if(i->next != NULL) {
+			s.append(", ");
+		}
+		i = i->next;
+	}
+	s.append("]");
+	return s;
+}
+
+
+string Student::toString() {
+	string s;
+	s.append("[");
+	LectNode* i = this->lect;
+	while(i != NULL) {
+		if(i->lect != NULL && i->lect->name != NULL) {
+			s += i->lect->name;
+			if(i->next != NULL) {
+				s.append(", ");
+			}
+			i = i->next;
+		}
+	}
+	s.append("]");
+	return s;
+}
+
 string StudNode::TYPE_NAME = "StudNode";
 
-void StudNode::registerMe(Heap *h) {
+StudNode::StudNode() {
+	next = NULL;
+	stud = NULL;
+}
+
+void StudNode::registerMe(Heap* h) {
 	TypeDescriptor *studNode = new TypeDescriptor("StudNode");
 	studNode->addPointer("next");
 	studNode->addPointer("stud");
@@ -67,8 +112,11 @@ void StudNode::registerMe(Heap *h) {
 }
 
 string LectNode::TYPE_NAME = "LectNode";
-
-void LectNode::registerMe(Heap *h) {
+LectNode::LectNode() {
+	next = NULL;
+	lect = NULL;
+}
+void LectNode::registerMe(Heap* h) {
 	TypeDescriptor *lectNode = new TypeDescriptor("LectNode");
 	lectNode->addPointer("next");
 	lectNode->addPointer("lect");
@@ -77,8 +125,12 @@ void LectNode::registerMe(Heap *h) {
 }
 
 string Student::TYPE_NAME = "Student";
+Student::Student() {
+	lect = NULL;
+	id = 0;
+}
 
-void Student::registerMe(Heap *h) {
+void Student::registerMe(Heap* h) {
 	TypeDescriptor *student = new TypeDescriptor("Student");
 	student->addInteger("id");
 	student->addString("name", 255);
@@ -88,7 +140,7 @@ void Student::registerMe(Heap *h) {
 }
 
 void Student::add(Lecture *l) {
-	LectNode* ln = (LectNode*)AppHeap::getInstance()->alloc(LectNode::TYPE_NAME);
+	LectNode* ln = new (AppHeap::getInstance()->alloc(LectNode::TYPE_NAME)) LectNode();
 	ln->lect = l;
 	if(this->lect != NULL) {
 		ln->next = this->lect;
@@ -114,7 +166,7 @@ void Student::remove(Lecture *l) {
 
 string Lecture::TYPE_NAME = "Lecture";
 
-void Lecture::registerMe(Heap *h) {
+void Lecture::registerMe(Heap* h) {
 	TypeDescriptor *lecture = new TypeDescriptor("Lecture");
 	lecture->addInteger("id");
 	lecture->addString("name", 255);
@@ -124,26 +176,41 @@ void Lecture::registerMe(Heap *h) {
 }
 
 void TestApp::main() {
-	list<Student*> *students = new list<Student*>();
 	Heap* h = AppHeap::getInstance();
 	StudentList::registerMe(h);
 	StudNode::registerMe(h);
 	LectNode::registerMe(h);
 	Student::registerMe(h);
 	Lecture::registerMe(h);
+	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
+	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+
+	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
+	Lecture* lectures[LECTURE_AMT];
 	int i = 0;
-	for(i=0; i<10; i++) {
-		Student* s = (Student*)AppHeap::getInstance()->alloc(Student::TYPE_NAME);
-		strcpy(s->name, "Student");
+	for(i=0; i<LECTURE_AMT; i++) {
+		Lecture* l = new (h->alloc(Lecture::TYPE_NAME)) Lecture();
+		strcpy(l->name, "Lecture 1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopq");
+		l->id = i;
+		l->semester = 3;
+		lectures[i] = l;
+	}
+	srand(1);
+	for(i=0; i<82; i++) {
+		Student* s = new (h->alloc(Student::TYPE_NAME)) Student();
+		strcpy(s->name, "Student 1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopq");
 		s->id = i;
-		students->push_back(s);
+		sl->add(s);
+		int addLectures  = rand()%4;
+		int j = 0;
+		for(j=0; j<addLectures; j++) {
+			s->add(lectures[j%LECTURE_AMT]);
+		}
 	}
-	list<Student*>::iterator it = students->begin();
-	list<Student*>::iterator end = students->end();
-	for(;it != end; ++it) {
-		cout << " " << (*it)->name << " " << (*it)->id << endl;
-	}
-	delete students;
+	cout << sl->toString() << endl;
+	cout << "FreeBytes: " << h->getFreeBytes() << endl;
+	cout << "End" << endl;
+
 }
 
 #endif /* APPCLASSES_CPP_ */

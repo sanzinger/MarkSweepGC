@@ -26,7 +26,7 @@ public:
 	uint64_t id;
 	char name[255];
 	uint64_t semester;
-	static void registerMe(Heap *h);
+	static void registerMe(Heap* h);
 };
 
 class Student {
@@ -36,36 +36,42 @@ public:
 	uint64_t id;
 	char name[255];
 	LectNode* lect = NULL;
-	static void registerMe(Heap *h);
+	Student();
+	static void registerMe(Heap* h);
 	void add(Lecture *l);
 	void remove(Lecture *l);
+	string toString();
 };
 
 class StudNode {
 public:
+	StudNode();
 	Student *stud = NULL;
 	StudNode *next = NULL;
 	static string TYPE_NAME;
-	static void registerMe(Heap *h);
+	static void registerMe(Heap* h);
 };
 
 class StudentList {
 private:
 	StudNode *first = NULL;
 public:
+	StudentList();
 	static string TYPE_NAME;
-	static void registerMe(Heap *h);
+	static void registerMe(Heap* h);
 	void add(Student *s);
 	void remove(Student *s);
+	string toString();
 };
 
 class LectNode {
 private:
 public:
-	Lecture *lect;
-	LectNode *next;
+	LectNode();
+	Lecture *lect = NULL;
+	LectNode *next = NULL;
 	static string TYPE_NAME;
-	static void registerMe(Heap *h);
+	static void registerMe(Heap* h);
 };
 
 class TestApp {

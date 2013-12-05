@@ -23,16 +23,33 @@ Heap::~Heap() {
 void* Heap::alloc(string typeId) {
 	TypeDescriptor* type = getByName(typeId);
 	uint64_t requiredSize = type->getObjectSize();
-	// One more word is required for the type tag and m/s and used bits.
-	requiredSize += HEAP_INTEGER_LENGTH;
 	FreeBlock* firstFitBlock = findBlockWithMinSize(requiredSize);
 	if(firstFitBlock != NULL) {
 		splitBlock(firstFitBlock, requiredSize);
 		useBlock(firstFitBlock);
-		return (void*)(firstFitBlock+HEAP_INTEGER_LENGTH);
+		setTypeTag(firstFitBlock, type);
+		//cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
+		return (void*)((uint64_t)firstFitBlock+HEAP_INTEGER_LENGTH);
 	} else {
+		cout << "WARN: Out of memory" << endl;
 		return NULL;
 	}
+}
+
+void Heap::setTypeTag(FreeBlock* b, TypeDescriptor* desc) {
+	uint64_t* typeTag = (uint64_t*)b;
+	*typeTag = (*typeTag & 0x3);
+	*typeTag |= (uint64_t)desc->getDescriptor() & ~0x3;
+}
+
+uint64_t Heap::getFreeBytes() {
+	FreeBlock* i = this->firstFreeBlock;
+	uint64_t bytes = 0;
+	while(i != NULL) {
+		bytes += i->length;
+		i = i->next;
+	}
+	return bytes;
 }
 
 FreeBlock* Heap::findBlockWithMinSize(uint64_t size) {
@@ -40,7 +57,7 @@ FreeBlock* Heap::findBlockWithMinSize(uint64_t size) {
 	while(i != NULL && i->length < size) {
 		i = i->next;
 	}
-	if(i->length > size) {
+	if(i!=NULL && i->length > size) {
 		return i;
 	} else {
 		return NULL;
@@ -55,6 +72,9 @@ void Heap::useBlock(FreeBlock* b) {
 		i = i->next;
 	}
 	if(i == b) {
+		if((uint64_t)i->next > ((uint64_t)heap + sizeof(heap))) {
+			cout << "ERROR i->next=" << i->next << " out of heap [" << (void*)heap << ":" << (void*)((uint64_t)heap + sizeof(heap)) << "]" << endl;
+		}
 		this->firstFreeBlock = i->next;
 	} else {
 		prev->next = i->next;
@@ -81,7 +101,7 @@ FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
 		return NULL;
 	}
 	validateFreeBlock(block);
-	FreeBlock *newBlock = (FreeBlock*)(block+n);
+	FreeBlock *newBlock = (FreeBlock*)(((uint64_t)block)+n);
 	newBlock->next = block->next;
 	block->next = newBlock;
 	newBlock->length = block->length-n;

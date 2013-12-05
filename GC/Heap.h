@@ -40,12 +40,14 @@ private:
 	void merge(FreeBlock *a, FreeBlock *b);
 	FreeBlock* findBlockWithMinSize(uint64_t size);
 	void useBlock(FreeBlock* b);
+	void setTypeTag(FreeBlock* b, TypeDescriptor* desc);
 public:
 	Heap();
 	virtual ~Heap();
 	void* alloc(string typeId);
 	void gc();
 	void registerType(TypeDescriptor *descriptor);
+	uint64_t getFreeBytes();
 };
 
 
