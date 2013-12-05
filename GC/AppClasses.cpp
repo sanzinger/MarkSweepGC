@@ -9,6 +9,9 @@
 #define APPCLASSES_CPP_
 
 #include "AppClasses.h"
+#include <cstring>
+#include <iostream>
+#include <list>
 
 Heap* AppHeap::h = NULL;
 
@@ -118,6 +121,29 @@ void Lecture::registerMe(Heap *h) {
 	lecture->addInteger("semester");
 	lecture->typeCompleted();
 	h->registerType(lecture);
+}
+
+void TestApp::main() {
+	list<Student*> *students = new list<Student*>();
+	Heap* h = AppHeap::getInstance();
+	StudentList::registerMe(h);
+	StudNode::registerMe(h);
+	LectNode::registerMe(h);
+	Student::registerMe(h);
+	Lecture::registerMe(h);
+	int i = 0;
+	for(i=0; i<10; i++) {
+		Student* s = (Student*)AppHeap::getInstance()->alloc(Student::TYPE_NAME);
+		strcpy(s->name, "Student");
+		s->id = i;
+		students->push_back(s);
+	}
+	list<Student*>::iterator it = students->begin();
+	list<Student*>::iterator end = students->end();
+	for(;it != end; ++it) {
+		cout << " " << (*it)->name << " " << (*it)->id << endl;
+	}
+	delete students;
 }
 
 #endif /* APPCLASSES_CPP_ */

@@ -68,6 +68,10 @@ public:
 	static void registerMe(Heap *h);
 };
 
+class TestApp {
+public:
+	static void main();
+};
 
 
 #endif /* APPCLASSES_H_ */
