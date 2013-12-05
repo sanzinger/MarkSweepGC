@@ -7,18 +7,10 @@
 
 #include "Heap.h"
 #include "AppClasses.h"
+#include <iostream>
 
 int main(int argc, char** argv) {
-
-	Heap* h = new Heap();
-	StudentList::registerMe(h);
-	StudNode::registerMe(h);
-	LectNode::registerMe(h);
-	Student::registerMe(h);
-	Lecture::registerMe(h);
-
-	h->alloc("Student");
-
+	TestApp::main();
 	return 0;
 }
 

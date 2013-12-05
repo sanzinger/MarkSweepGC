@@ -21,7 +21,46 @@ Heap::~Heap() {
 }
 
 void* Heap::alloc(string typeId) {
-	return NULL;
+	TypeDescriptor* type = getByName(typeId);
+	uint64_t requiredSize = type->getObjectSize();
+	// One more word is required for the type tag and m/s and used bits.
+	requiredSize += HEAP_INTEGER_LENGTH;
+	FreeBlock* firstFitBlock = findBlockWithMinSize(requiredSize);
+	if(firstFitBlock != NULL) {
+		splitBlock(firstFitBlock, requiredSize);
+		useBlock(firstFitBlock);
+		return (void*)(firstFitBlock+HEAP_INTEGER_LENGTH);
+	} else {
+		return NULL;
+	}
+}
+
+FreeBlock* Heap::findBlockWithMinSize(uint64_t size) {
+	FreeBlock* i = this->firstFreeBlock;
+	while(i != NULL && i->length < size) {
+		i = i->next;
+	}
+	if(i->length > size) {
+		return i;
+	} else {
+		return NULL;
+	}
+}
+
+void Heap::useBlock(FreeBlock* b) {
+	FreeBlock* i = this->firstFreeBlock;
+	FreeBlock* prev = NULL;
+	while(i != NULL && i != b) {
+		prev = i;
+		i = i->next;
+	}
+	if(i == b) {
+		this->firstFreeBlock = i->next;
+	} else {
+		prev->next = i->next;
+	}
+	// Set the used bit (bit 0) and all others to 0
+	*(uint64_t*)b = 1;
 }
 
 void Heap::merge(FreeBlock *a, FreeBlock *b) {
@@ -75,6 +114,7 @@ void Heap::initHeap() {
 	FreeBlock *rootBlock = (FreeBlock*)heap;
 	rootBlock->length = HEAP_SIZE;
 	rootBlock->next = NULL;
+	this->firstFreeBlock = rootBlock;
 }
 
 

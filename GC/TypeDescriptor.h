@@ -19,9 +19,9 @@ private:
 	string name;
 	uint64_t *descPosition;
 	void addToObjectSize(uint64_t length);
-	uint64_t getObjectSize();
 public:
 	TypeDescriptor(string name);
+	uint64_t getObjectSize();
 	void addPointer(string name);
 	void addInteger(string name);
 	void addString(string name, uint64_t length);

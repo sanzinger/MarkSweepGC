@@ -19,7 +19,7 @@ typedef uint32_t pointer_offset;
 #define HEAP_POINTER_LENGTH 8
 #define HEAP_INTEGER_LENGTH 8
 #define HEAP_SENTINEL_LENGTH 8
-#define HEAP_SIZE 2^10*32
+#define HEAP_SIZE ((1<<10)-1)*32
 #define MIN_BLOCK_SIZE 16 // Bytes
 #define BLOCK_ALIGN 8 // Bytes
 
@@ -30,6 +30,7 @@ struct FreeBlock {
 
 class Heap {
 	uint8_t heap[HEAP_SIZE]; // 32 Kilobyte heap
+	FreeBlock* firstFreeBlock;
 private:
 	list<TypeDescriptor*> *typeDescriptors;
 	TypeDescriptor* getByName(string name);
@@ -37,6 +38,8 @@ private:
 	FreeBlock *splitBlock(FreeBlock *block, uint64_t n);
 	bool validateFreeBlock(FreeBlock *block);
 	void merge(FreeBlock *a, FreeBlock *b);
+	FreeBlock* findBlockWithMinSize(uint64_t size);
+	void useBlock(FreeBlock* b);
 public:
 	Heap();
 	virtual ~Heap();
