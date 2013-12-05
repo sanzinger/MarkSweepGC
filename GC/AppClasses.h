@@ -17,10 +17,9 @@ public:
 	static Heap* getInstance();
 };
 
-class Object {
-};
+class LectNode;
 
-class Lecture : Object {
+class Lecture {
 private:
 public:
 	static string TYPE_NAME;
@@ -30,28 +29,27 @@ public:
 	static void registerMe(Heap *h);
 };
 
-class Student : Object {
+class Student {
 private:
 public:
 	static string TYPE_NAME;
 	uint64_t id;
 	char name[255];
-	Lecture *lect = NULL;
+	LectNode* lect = NULL;
 	static void registerMe(Heap *h);
 	void add(Lecture *l);
 	void remove(Lecture *l);
 };
 
-class StudNode : Object {
-private:
-	StudNode *next = NULL;
-	Student *stud = NULL;
+class StudNode {
 public:
+	Student *stud = NULL;
+	StudNode *next = NULL;
 	static string TYPE_NAME;
 	static void registerMe(Heap *h);
 };
 
-class StudentList : Object {
+class StudentList {
 private:
 	StudNode *first = NULL;
 public:
@@ -61,11 +59,11 @@ public:
 	void remove(Student *s);
 };
 
-class LectNode : Object {
+class LectNode {
 private:
-	LectNode *next;
-	Lecture *lect;
 public:
+	Lecture *lect;
+	LectNode *next;
 	static string TYPE_NAME;
 	static void registerMe(Heap *h);
 };

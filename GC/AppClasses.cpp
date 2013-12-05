@@ -29,11 +29,28 @@ void StudentList::registerMe(Heap *h) {
 }
 
 void StudentList::add(Student *s) {
-
+	StudNode* sn = (StudNode*)AppHeap::getInstance()->alloc(StudNode::TYPE_NAME);
+	sn->stud = s;
+	if(this->first != NULL) {
+		sn->next = this->first;
+	}
+	this->first = sn;
 }
 
 void StudentList::remove(Student *s) {
-
+	StudNode* i = this->first;
+	StudNode* prev = NULL;
+	while(i != NULL && i->stud != s) {
+		prev = i;
+		i = i->next;
+	}
+	if(i != NULL) {
+		if(i == this->first) {
+			this->first = this->first->next;
+		} else {
+			prev->next = i->next;
+		}
+	}
 }
 
 string StudNode::TYPE_NAME = "StudNode";
@@ -69,13 +86,27 @@ void Student::registerMe(Heap *h) {
 
 void Student::add(Lecture *l) {
 	LectNode* ln = (LectNode*)AppHeap::getInstance()->alloc(LectNode::TYPE_NAME);
-	if(this->lect == NULL) {
-
+	ln->lect = l;
+	if(this->lect != NULL) {
+		ln->next = this->lect;
 	}
+	this->lect = ln;
 }
 
 void Student::remove(Lecture *l) {
-
+	LectNode* i = this->lect;
+	LectNode* prev = NULL;
+	while(i != NULL && i->lect != l) {
+		prev = i;
+		i = i->next;
+	}
+	if(i != NULL) {
+		if(i == this->lect) {
+			this->lect = this->lect->next;
+		} else {
+			prev->next = i->next;
+		}
+	}
 }
 
 string Lecture::TYPE_NAME = "Lecture";
