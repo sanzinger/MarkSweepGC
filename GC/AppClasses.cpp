@@ -15,7 +15,7 @@
 #include <string>
 #include <cstdlib>
 
-#define LECTURE_AMT 16
+#define LECTURE_AMT 17
 
 Heap* AppHeap::h = NULL;
 
@@ -65,34 +65,36 @@ void StudentList::remove(Student *s) {
 
 string StudentList::toString() {
 	string s;
-	s.append("[");
+	s.append("StudentList([");
 	StudNode* i = this->first;
 	while(i != NULL) {
 		s += i->stud->toString();
 		if(i->next != NULL) {
-			s.append(", ");
+			s.append(",\n\t");
 		}
 		i = i->next;
 	}
-	s.append("]");
+	s.append("])");
 	return s;
 }
 
 
 string Student::toString() {
 	string s;
+	s.append("Student(");
+	s.append(name);
 	s.append("[");
 	LectNode* i = this->lect;
 	while(i != NULL) {
 		if(i->lect != NULL && i->lect->name != NULL) {
 			s += i->lect->name;
 			if(i->next != NULL) {
-				s.append(", ");
+				s.append(",\n\t");
 			}
 			i = i->next;
 		}
 	}
-	s.append("]");
+	s.append("])");
 	return s;
 }
 
@@ -190,7 +192,7 @@ void TestApp::main() {
 	int i = 0;
 	for(i=0; i<LECTURE_AMT; i++) {
 		Lecture* l = new (h->alloc(Lecture::TYPE_NAME)) Lecture();
-		strcpy(l->name, "Lecture 1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopq");
+		strcpy(l->name, "Lecture ______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________");
 		l->id = i;
 		l->semester = 3;
 		lectures[i] = l;
@@ -198,7 +200,7 @@ void TestApp::main() {
 	srand(1);
 	for(i=0; i<82; i++) {
 		Student* s = new (h->alloc(Student::TYPE_NAME)) Student();
-		strcpy(s->name, "Student 1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopq");
+		strcpy(s->name, "Student ______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________");
 		s->id = i;
 		sl->add(s);
 		int addLectures  = rand()%4;
@@ -206,6 +208,16 @@ void TestApp::main() {
 		for(j=0; j<addLectures; j++) {
 			s->add(lectures[j%LECTURE_AMT]);
 		}
+		for(j=0; j<LECTURE_AMT; j++) {
+			s->remove(lectures[rand()%LECTURE_AMT]);
+		}
+	}
+	StudNode* s = sl->first;
+	while(s != NULL) {
+		if(rand()%2==0) { // Remove one half
+			sl->remove(s->stud);
+		}
+		s = s->next;
 	}
 	cout << sl->toString() << endl;
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;

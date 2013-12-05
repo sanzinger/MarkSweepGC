@@ -54,8 +54,8 @@ public:
 
 class StudentList {
 private:
-	StudNode *first = NULL;
 public:
+	StudNode *first = NULL;
 	StudentList();
 	static string TYPE_NAME;
 	static void registerMe(Heap* h);

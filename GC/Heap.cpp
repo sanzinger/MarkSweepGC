@@ -120,14 +120,6 @@ bool Heap::validateFreeBlock(FreeBlock *block) {
 
 void Heap::registerType(TypeDescriptor *typeDescriptor) {
 	typeDescriptors->push_back(typeDescriptor);
-	/**list<TypeDescriptor*>::iterator it = typeDescriptors->begin();
-	list<TypeDescriptor*>::iterator end = typeDescriptors->end();
-	cout << "Register: " << (typeDescriptor->getName()) << endl;
-	cout << "Registered so far: " << endl;
-	for(;it != end; ++it) {
-		cout << " " << (*it)->getName() << endl;
-	}*/
-	//cout << typeDescri;
 }
 
 void Heap::initHeap() {
