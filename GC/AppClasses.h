@@ -10,44 +10,63 @@
 
 #include "Heap.h"
 
-class Lecture {
+class AppHeap {
 private:
+	static Heap* h;
+public:
+	static Heap* getInstance();
+};
+
+class Object {
+};
+
+class Lecture : Object {
+private:
+public:
+	static string TYPE_NAME;
 	uint64_t id;
 	char name[255];
 	uint64_t semester;
-public:
 	static void registerMe(Heap *h);
 };
 
-class Student {
+class Student : Object {
 private:
+public:
+	static string TYPE_NAME;
 	uint64_t id;
 	char name[255];
-	Lecture *lect;
-public:
+	Lecture *lect = NULL;
 	static void registerMe(Heap *h);
+	void add(Lecture *l);
+	void remove(Lecture *l);
 };
 
-class StudNode {
+class StudNode : Object {
 private:
-	StudNode *next;
-	Student *stud;
+	StudNode *next = NULL;
+	Student *stud = NULL;
 public:
+	static string TYPE_NAME;
 	static void registerMe(Heap *h);
 };
 
-class StudentList {
+class StudentList : Object {
 private:
-	StudNode *first;
+	StudNode *first = NULL;
 public:
+	static string TYPE_NAME;
 	static void registerMe(Heap *h);
+	void add(Student *s);
+	void remove(Student *s);
 };
 
-class LectNode {
+class LectNode : Object {
 private:
 	LectNode *next;
 	Lecture *lect;
 public:
+	static string TYPE_NAME;
 	static void registerMe(Heap *h);
 };
 

@@ -40,7 +40,7 @@ private:
 public:
 	Heap();
 	virtual ~Heap();
-	void alloc(string typeId);
+	void* alloc(string typeId);
 	void gc();
 	void registerType(TypeDescriptor *descriptor);
 };

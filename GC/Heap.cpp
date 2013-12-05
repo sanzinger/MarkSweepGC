@@ -20,7 +20,8 @@ Heap::~Heap() {
 	delete typeDescriptors;
 }
 
-void Heap::alloc(string typeId) {
+void* Heap::alloc(string typeId) {
+	return NULL;
 }
 
 void Heap::merge(FreeBlock *a, FreeBlock *b) {
