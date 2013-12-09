@@ -33,6 +33,7 @@ class Heap {
 	FreeBlock* firstFreeBlock;
 private:
 	list<TypeDescriptor*> *typeDescriptors;
+	list<uint64_t*> *roots;
 	TypeDescriptor* getByName(string name);
 	void initHeap();
 	FreeBlock *splitBlock(FreeBlock *block, uint64_t n);
@@ -40,13 +41,17 @@ private:
 	void merge(FreeBlock *a, FreeBlock *b);
 	FreeBlock* findBlockWithMinSize(uint64_t size);
 	void useBlock(FreeBlock* b);
+	void freeBlock(uint64_t* block, FreeBlock* next);
 	void setTypeTag(FreeBlock* b, TypeDescriptor* desc);
+	void markBlock(uint64_t* rootBlock);
+	void sweep();
 public:
 	Heap();
 	virtual ~Heap();
 	void* alloc(string typeId);
 	void gc();
 	void registerType(TypeDescriptor *descriptor);
+	void addRoot(uint64_t* root);
 	uint64_t getFreeBytes();
 };
 

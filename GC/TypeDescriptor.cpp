@@ -7,11 +7,12 @@
 
 #include "TypeDescriptor.h"
 #include "Heap.h"
+#include <iostream>
 
 TypeDescriptor::TypeDescriptor(string name) {
 	this->name = name;
 	this->descPosition = (uint64_t*)desc;
-	*this->descPosition = 8;
+	*this->descPosition = HEAP_INTEGER_LENGTH;
 	this->descPosition++;
 }
 
@@ -20,7 +21,7 @@ uint64_t TypeDescriptor::getObjectSize() {
 }
 
 void TypeDescriptor::addPointer(string name) {
-	*this->descPosition = this->getObjectSize();
+	*this->descPosition = this->getObjectSize() - HEAP_INTEGER_LENGTH;
 	this->descPosition ++;
 	addToObjectSize(HEAP_POINTER_LENGTH);
 }
@@ -37,6 +38,7 @@ void TypeDescriptor::typeCompleted() {
 	// The sentinel value points points back to the beginning of the type desc block.
 	// This pointer is relative, hence negative
 	int64_t sentinelValue = (int64_t)((int8_t*)this->desc - (int8_t*)this->descPosition);
+	cout << "sentinel: " << sentinelValue << endl;
 	*(int64_t*)this->descPosition = sentinelValue;
 }
 

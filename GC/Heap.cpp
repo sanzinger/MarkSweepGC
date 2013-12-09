@@ -13,11 +13,112 @@ using namespace std;
 
 Heap::Heap() {
 	typeDescriptors = new list<TypeDescriptor*>();
+	roots = new list<uint64_t*>();
 	initHeap();
 }
 
 Heap::~Heap() {
 	delete typeDescriptors;
+	delete roots;
+}
+
+void Heap::gc() {
+	list<uint64_t*>::iterator it = roots->begin();
+	list<uint64_t*>::iterator end = roots->end();
+
+	for(;it != end; ++it) {
+		markBlock(*it);
+	}
+
+	sweep();
+}
+
+void Heap::markBlock(uint64_t* currentBlock) {
+	uint64_t* prevBlock = NULL; // prev
+	uint64_t* offsetBlock = NULL; //p
+	uint64_t* padr = NULL;
+	*(currentBlock-1) |= 0x2; // Mark
+
+	for(;;) {
+		uint64_t* typeTagAdr = (uint64_t*)(*(currentBlock-1) & ~0x3);
+		*(currentBlock-1) = (uint64_t)(typeTagAdr + 1);
+		int64_t offset = *(typeTagAdr+1);
+
+		if(offset >= 0) {
+			cout << "advance" << endl;
+			// pointer to the pointer of the next block (in current block)
+			padr = (uint64_t*)((uint64_t)currentBlock+offset);
+			offsetBlock = (uint64_t*)*padr; // pointer to the next block
+
+			if(offsetBlock != NULL && (*(offsetBlock-1) & 0x2) == 0) {
+				*padr = (uint64_t)prevBlock;
+				prevBlock = currentBlock;
+				currentBlock = offsetBlock;
+				*(currentBlock-1) |= 0x2; // Mark
+				cout << "Block marked" << endl;
+			}
+		} else {
+			cout << "retreat" << endl;
+			*(currentBlock-1) += offset; // restore tag
+			if(prevBlock == NULL) {
+				cout << "reached end" << endl;
+				return;
+			}
+			offsetBlock = currentBlock;
+			currentBlock = prevBlock;
+			offset = *typeTagAdr;
+			padr = (uint64_t*)((uint64_t)currentBlock + offset);
+			prevBlock = (uint64_t*)*padr;
+			*padr = (uint64_t)offsetBlock;
+		}
+	}
+}
+
+void Heap::sweep() {
+	uint64_t* cur = (uint64_t*)heap;
+	uint64_t* heapEnd = (uint64_t*)(heap+HEAP_SIZE);
+
+	FreeBlock* lastFreeBlock = NULL;
+	bool dataBetween = false;
+
+	cout << cur <<" "<<heapEnd << endl;
+	while(cur < heapEnd) {
+		bool isFree = !(*cur & 0x1);
+		bool isUnmarked = !isFree && !(*cur & 0x2);
+
+		if(isUnmarked) {
+			freeBlock(cur, NULL);
+			cout << "free Block" << endl;
+		}
+
+		if(isFree || isUnmarked) {
+			if(dataBetween) {
+				dataBetween = false;
+				lastFreeBlock->next = (FreeBlock*)cur;
+				lastFreeBlock = NULL;
+			}
+
+			if(lastFreeBlock != NULL) {
+				merge(lastFreeBlock, (FreeBlock*)cur);
+			} else {
+				lastFreeBlock = (FreeBlock*)cur;
+			}
+
+			cur = (uint64_t*)((uint64_t)cur+8+*cur);
+		} else {
+			dataBetween = true;
+			uint64_t* typeTagAdr = (uint64_t*)(*cur & ~0x3);
+			cur = (uint64_t*)((uint64_t)cur+8+*typeTagAdr);
+		}
+	}
+}
+
+void Heap::freeBlock(uint64_t* block, FreeBlock* next) {
+	uint64_t* typeTagAdr = (uint64_t*)(*block & ~0x3);
+	int64_t size = *typeTagAdr;
+
+	*block = size & ~0x3;
+	*(block+1) = (uint64_t)next;
 }
 
 void* Heap::alloc(string typeId) {
@@ -28,7 +129,7 @@ void* Heap::alloc(string typeId) {
 		splitBlock(firstFitBlock, requiredSize);
 		useBlock(firstFitBlock);
 		setTypeTag(firstFitBlock, type);
-		//cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
+		cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
 		return (void*)((uint64_t)firstFitBlock+HEAP_INTEGER_LENGTH);
 	} else {
 		cout << "WARN: Out of memory" << endl;
@@ -86,8 +187,10 @@ void Heap::useBlock(FreeBlock* b) {
 void Heap::merge(FreeBlock *a, FreeBlock *b) {
 	validateFreeBlock(a);
 	validateFreeBlock(b);
-	// Test if they are really neighbors?
-	// Do the merge
+
+	FreeBlock *temp = b->next;
+	a->length += MIN_BLOCK_SIZE + b->length;
+	a->next = temp;
 }
 
 FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
@@ -97,7 +200,7 @@ FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
 	}
 	if(block->length < n || n < MIN_BLOCK_SIZE || block->length - n < MIN_BLOCK_SIZE) {
 		cout << "splitBlock(" << block << ", " << n << "): requested split violates MIN_BLOCK_SIZE=" <<
-				MIN_BLOCK_SIZE << " or exceeds block length of " << block->length << endl;
+				MIN_BLOCK_SIZE << " or exceeds block length of " << block->length - MIN_BLOCK_SIZE << endl;
 		return NULL;
 	}
 	validateFreeBlock(block);
@@ -129,7 +232,6 @@ void Heap::initHeap() {
 	this->firstFreeBlock = rootBlock;
 }
 
-
 TypeDescriptor* Heap::getByName(string name) {
 	list<TypeDescriptor*>::iterator it = typeDescriptors->begin();
 	list<TypeDescriptor*>::iterator end = typeDescriptors->end();
@@ -139,4 +241,8 @@ TypeDescriptor* Heap::getByName(string name) {
 		}
 	}
 	return NULL;
+}
+
+void Heap::addRoot(uint64_t* root) {
+	roots->push_back(root);
 }

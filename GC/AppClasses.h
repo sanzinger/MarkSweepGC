@@ -35,7 +35,7 @@ public:
 	static string TYPE_NAME;
 	uint64_t id;
 	char name[255];
-	LectNode* lect = NULL;
+	LectNode* lect;
 	Student();
 	static void registerMe(Heap* h);
 	void add(Lecture *l);
@@ -46,8 +46,8 @@ public:
 class StudNode {
 public:
 	StudNode();
-	Student *stud = NULL;
-	StudNode *next = NULL;
+	Student *stud;
+	StudNode *next;
 	static string TYPE_NAME;
 	static void registerMe(Heap* h);
 };
@@ -55,7 +55,7 @@ public:
 class StudentList {
 private:
 public:
-	StudNode *first = NULL;
+	StudNode *first;
 	StudentList();
 	static string TYPE_NAME;
 	static void registerMe(Heap* h);
@@ -68,16 +68,10 @@ class LectNode {
 private:
 public:
 	LectNode();
-	Lecture *lect = NULL;
-	LectNode *next = NULL;
+	Lecture *lect;
+	LectNode *next;
 	static string TYPE_NAME;
 	static void registerMe(Heap* h);
 };
-
-class TestApp {
-public:
-	static void main();
-};
-
 
 #endif /* APPCLASSES_H_ */
