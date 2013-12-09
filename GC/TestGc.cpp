@@ -7,6 +7,9 @@
 
 #include "TestGc.h"
 
+#include <cstdlib>
+#include <cstring>
+
 int main(int argc, char** argv) {
 	TestGc *testGc = new TestGc();
 	testGc->run();
@@ -17,9 +20,35 @@ uint64_t TestGc::run() {
 	runs = 0;
 	errors = 0;
 
-	testGc1();
+	testGc2();
 
 	return errors;
+}
+
+void TestGc::testGc2() {
+	runs++;
+
+	cout << "Test GC-2" << endl;
+
+	Heap* h = AppHeap::getInstance();
+	StudentList::registerMe(h);
+	StudNode::registerMe(h);
+	LectNode::registerMe(h);
+	Student::registerMe(h);
+	Lecture::registerMe(h);
+	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
+	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	int64_t freeBefore = (int64_t)h->getFreeBytes();
+	StudNode* sn = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	sl->first = sn;
+	h->addRoot((uint64_t*)sl);
+	sl->first = NULL;
+	h->gc();
+	int64_t freeAfter = (int64_t)h->getFreeBytes();
+	if(freeBefore != h->getFreeBytes()) {
+		cout << "ERROR: Free bytes less than before. Changed by " << (freeBefore-freeAfter) << endl;
+	}
+	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
 }
 
 void TestGc::testGc1() {
@@ -74,5 +103,6 @@ void TestGc::testGc1() {
 
 	h->addRoot((uint64_t*)sl);
 	h->gc();
+	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 }
 

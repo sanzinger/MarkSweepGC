@@ -23,6 +23,7 @@ private:
 	uint64_t runs;
 	uint64_t errors;
 	void testGc1();
+	void testGc2();
 public:
 	uint64_t run();
 };
