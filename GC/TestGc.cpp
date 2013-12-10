@@ -42,8 +42,8 @@ void TestGc::testGc2() {
 	StudNode* sn = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	sl->first = sn;
 	h->addRoot((uint64_t*)sl);
-	sl->first = NULL;
-	h->dumpHeap();
+	//sl->first = NULL;
+	//h->dumpHeap();
 	h->gc();
 	int64_t freeAfter = (int64_t)h->getFreeBytes();
 	if(freeBefore != h->getFreeBytes()) {

@@ -7,6 +7,7 @@
 
 #include "Heap.h"
 #include <iostream>
+#include <cstdio>
 
 
 using namespace std;
@@ -27,51 +28,44 @@ void Heap::gc() {
 	list<uint64_t*>::iterator end = roots->end();
 
 	for(;it != end; ++it) {
-		markBlock(*it);
+		markBlock((UsedBlock*)*it);
 	}
-
+	dumpHeap();
 	sweep();
 }
 
-void Heap::markBlock(uint64_t* currentBlock) {
-	uint64_t* prevBlock = NULL; // prev
-	uint64_t* offsetBlock = NULL; //p
-	uint64_t* padr = NULL;
-	*(currentBlock-1) |= 0x2; // Mark
+void Heap::markBlock(UsedBlock* cur) {
+	UsedBlock* prev = NULL; // prev
+	void** padr = NULL;
+	UsedBlock* p = NULL;
+	MARK(cur);
 
 	for(;;) {
-		uint64_t* typeTagAdr = (uint64_t*)(*(currentBlock-1) & ~0x3);
-		// TODO: Bad smell, resets the used bit
-		*(currentBlock-1) &= 0x3;
-		*(currentBlock-1) |= (uint64_t)(typeTagAdr + 1) & ~0x3;
-		int64_t offset = *(typeTagAdr+1);
+		ADD_TO_TAG(cur, HEAP_POINTER_LENGTH);
+		int64_t off = *(int64_t*)(cur->typeTag.scal&~0x3);
 
-		if(offset >= 0) {
+		if(off >= 0) {
 			cout << "advance" << endl;
 			// pointer to the pointer of the next block (in current block)
-			padr = (uint64_t*)((uint64_t)currentBlock+offset);
-			offsetBlock = (uint64_t*)*padr; // pointer to the next block
-
-			if(offsetBlock != NULL && (*(offsetBlock-1) & 0x2) == 0) {
-				*padr = (uint64_t)prevBlock;
-				prevBlock = currentBlock;
-				currentBlock = offsetBlock;
-				*(currentBlock-1) |= 0x2; // Mark
-				cout << "Block marked" << endl;
+			padr = POINTER_ADDRESS(cur, off);
+			p = OBJECT_TO_BLOCK(*padr);
+			if(*padr != NULL && !IS_MARKED(p)) {
+				*padr = BLOCK_TO_OBJECT(prev);
+				prev = cur;
+				cur = p;
+				MARK(cur);
 			}
 		} else {
-			cout << "retreat" << endl;
-			*(currentBlock-1) += offset; // restore tag
-			if(prevBlock == NULL) {
-				cout << "reached end" << endl;
+			ADD_TO_TAG(cur, off); // Restore tag (off < 0)
+			if(prev == NULL) {
 				return;
 			}
-			offsetBlock = currentBlock;
-			currentBlock = prevBlock;
-			offset = *typeTagAdr;
-			padr = (uint64_t*)((uint64_t)currentBlock + offset);
-			prevBlock = (uint64_t*)*padr;
-			*padr = (uint64_t)offsetBlock;
+			p = cur;
+			cur = prev;
+			off = *(int64_t*)(cur->typeTag.scal&~0x3);
+			padr = POINTER_ADDRESS(cur, off);
+			prev = OBJECT_TO_BLOCK(*padr);
+			*padr = BLOCK_TO_OBJECT(p);
 		}
 	}
 }
@@ -238,10 +232,12 @@ void Heap::dumpHeap() {
 	cout << "Heapdump:" << endl;
 	Block* b = (Block*)heap;
 	while(b < (Block*)(&heap[HEAP_SIZE])) {
-		bool isUsed = b->used.typeTag.scal & 1;
-		bool isMarked = b->used.typeTag.scal & 2;
-		cout << "  " << b << ": isUsed=" << isUsed << " isMarked=" << isMarked << " ";
+		bool isUsed = IS_USED(b);
+		std::fprintf(stdout, "    %p(%3ld): ", b, BLOCK_LENGTH(b));
+		cout << "isUsed=" << isUsed << " ";
 		if(isUsed) {
+			bool isMarked = IS_MARKED((&b->used));
+			cout << " isMarked=" << isMarked << " ";
 			if(validateTypeTag(&b->used)) { // If typetag is valid
 				TypeDescriptor* td = getByBlock(&b->used);
 				cout << td->getName();
@@ -250,7 +246,7 @@ void Heap::dumpHeap() {
 				return;
 			}
 		} else {
-			cout << "<FreeBlock> " << " next=" << b->free.next << " length=" << b->free.length;
+			cout << "<FreeBlock> " << " next=" << b->free.next << " ";
 		}
 		b= NEXT_BLOCK(b);
 		cout << endl;
@@ -305,5 +301,5 @@ TypeDescriptor* Heap::getByName(string name) {
 }
 
 void Heap::addRoot(uint64_t* root) {
-	roots->push_back(root);
+	roots->push_back(root-1);
 }

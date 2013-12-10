@@ -23,10 +23,16 @@ typedef uint32_t pointer_offset;
 #define MIN_BLOCK_SIZE 16 // Bytes
 #define BLOCK_ALIGN 8 // Bytes
 
-#define TYPE_DESCRIPTOR(block) ((uint64_t*)(block->used.typeTag.scal&~3))
+#define TYPE_DESCRIPTOR(block) ((int64_t*)(block->used.typeTag.scal&~3))
 #define IS_USED(block) (block->used.typeTag.scal&1)
+#define IS_MARKED(block) (block->typeTag.scal&2)
 #define BLOCK_LENGTH(block) (IS_USED(block) ? TYPE_DESCRIPTOR(block)[0] : block->free.length)
 #define NEXT_BLOCK(block) ((Block*)((uint64_t)block+BLOCK_LENGTH(block)))
+#define ADD_TO_TAG(block, by) (block->typeTag.scal += by)
+#define MARK(block) (block->typeTag.scal |= 2)
+#define OBJECT_TO_BLOCK(obj) ((UsedBlock*)((uint64_t)obj-HEAP_POINTER_LENGTH))
+#define BLOCK_TO_OBJECT(obj) ((UsedBlock*)((uint64_t)obj+HEAP_POINTER_LENGTH))
+#define POINTER_ADDRESS(block, off) (void**)(&block->data+off/HEAP_POINTER_LENGTH)
 
 union PointerOrScalar {
 	int64_t* ptr;
@@ -63,7 +69,7 @@ private:
 	void useBlock(FreeBlock* b);
 	void freeBlock(uint64_t* block, FreeBlock* next);
 	void setTypeTag(FreeBlock* b, TypeDescriptor* desc);
-	void markBlock(uint64_t* rootBlock);
+	void markBlock(UsedBlock* rootBlock);
 	void sweep();
 	bool validateTypeTag(UsedBlock* b);
 	TypeDescriptor* getByBlock(UsedBlock* b);
