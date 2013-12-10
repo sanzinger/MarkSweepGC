@@ -41,7 +41,9 @@ void Heap::markBlock(uint64_t* currentBlock) {
 
 	for(;;) {
 		uint64_t* typeTagAdr = (uint64_t*)(*(currentBlock-1) & ~0x3);
-		*(currentBlock-1) = (uint64_t)(typeTagAdr + 1);
+		// TODO: Bad smell, resets the used bit
+		*(currentBlock-1) &= 0x3;
+		*(currentBlock-1) |= (uint64_t)(typeTagAdr + 1) & ~0x3;
 		int64_t offset = *(typeTagAdr+1);
 
 		if(offset >= 0) {
@@ -84,17 +86,19 @@ void Heap::sweep() {
 	cout << cur <<" "<<heapEnd << endl;
 	while(cur < heapEnd) {
 		bool isFree = !(*cur & 0x1);
-		bool isUnmarked = !isFree && !(*cur & 0x2);
-
-		if(isUnmarked) {
+		bool isUnmarked = !(*cur & 0x2);
+		cout << "Block(" << (uint64_t)cur-(uint64_t)heap << "): isFree=" << isFree << ", isUnmarked=" << isUnmarked;
+		if(!isFree && isUnmarked) {
 			freeBlock(cur, NULL);
-			cout << "free Block" << endl;
+			cout << "free Block";
 		}
 
 		if(isFree || isUnmarked) {
 			if(dataBetween) {
 				dataBetween = false;
-				lastFreeBlock->next = (FreeBlock*)cur;
+				if(lastFreeBlock != NULL) {
+					lastFreeBlock->next = (FreeBlock*)cur;
+				}
 				lastFreeBlock = NULL;
 			}
 
@@ -110,6 +114,7 @@ void Heap::sweep() {
 			uint64_t* typeTagAdr = (uint64_t*)(*cur & ~0x3);
 			cur = (uint64_t*)((uint64_t)cur+8+*typeTagAdr);
 		}
+		cout << endl;
 	}
 }
 
@@ -119,6 +124,9 @@ void Heap::freeBlock(uint64_t* block, FreeBlock* next) {
 
 	*block = size & ~0x3;
 	*(block+1) = (uint64_t)next;
+	if(block < (uint64_t*)firstFreeBlock) {
+		firstFreeBlock = (FreeBlock*)block;
+	}
 }
 
 void* Heap::alloc(string typeId) {
@@ -140,7 +148,8 @@ void* Heap::alloc(string typeId) {
 void Heap::setTypeTag(FreeBlock* b, TypeDescriptor* desc) {
 	uint64_t* typeTag = (uint64_t*)b;
 	*typeTag = (*typeTag & 0x3);
-	*typeTag |= (uint64_t)desc->getDescriptor() & ~0x3;
+	*typeTag |= (uint64_t)desc->getDescriptor() & (~0x3);
+	cout <<"";
 }
 
 uint64_t Heap::getFreeBytes() {
