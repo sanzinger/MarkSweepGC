@@ -26,6 +26,7 @@ typedef uint32_t pointer_offset;
 #define TYPE_DESCRIPTOR(block) ((uint64_t*)(block->used.typeTag.scal&~3))
 #define IS_USED(block) (block->used.typeTag.scal&1)
 #define BLOCK_LENGTH(block) (IS_USED(block) ? TYPE_DESCRIPTOR(block)[0] : block->free.length)
+#define NEXT_BLOCK(block) ((Block*)((uint64_t)block+BLOCK_LENGTH(block)))
 
 union PointerOrScalar {
 	int64_t* ptr;

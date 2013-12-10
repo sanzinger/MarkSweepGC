@@ -252,7 +252,7 @@ void Heap::dumpHeap() {
 		} else {
 			cout << "<FreeBlock> " << " next=" << b->free.next << " length=" << b->free.length;
 		}
-		b= (Block*)((uint64_t)b+BLOCK_LENGTH(b));
+		b= NEXT_BLOCK(b);
 		cout << endl;
 	}
 }
