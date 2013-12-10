@@ -234,6 +234,58 @@ void Heap::registerType(TypeDescriptor *typeDescriptor) {
 	typeDescriptors->push_back(typeDescriptor);
 }
 
+void Heap::dumpHeap() {
+	cout << "Heapdump:" << endl;
+	Block* b = (Block*)heap;
+	while(b < (Block*)(&heap[HEAP_SIZE])) {
+		bool isUsed = b->used.typeTag.scal & 1;
+		bool isMarked = b->used.typeTag.scal & 2;
+		cout << "  " << b << ": isUsed=" << isUsed << " isMarked=" << isMarked << " ";
+		if(isUsed) {
+			if(validateTypeTag(&b->used)) { // If typetag is valid
+				TypeDescriptor* td = getByBlock(&b->used);
+				cout << td->getName();
+			} else {
+				cout << endl << "ERROR: Invalid TypeTag, aborting." << endl;
+				return;
+			}
+		} else {
+			cout << "<FreeBlock> " << " next=" << b->free.next << " length=" << b->free.length;
+		}
+		b= (Block*)((uint64_t)b+BLOCK_LENGTH(b));
+		cout << endl;
+	}
+}
+
+TypeDescriptor* Heap::getByBlock(UsedBlock* b) {
+	list<TypeDescriptor*>::iterator it = typeDescriptors->begin();
+	list<TypeDescriptor*>::iterator end = typeDescriptors->end();
+
+	for(;it != end; ++it) {
+		if((*it)->getDescriptor() == (void*)(b->typeTag.scal&~0x3)) {
+			return *it;
+		}
+	}
+	return NULL;
+}
+
+bool Heap::validateTypeTag(UsedBlock* b) {
+	int64_t* typeTag = (int64_t*)(b->typeTag.scal & ~0x3);
+	bool error = false;
+	if(!(b->typeTag.scal & 1)) {
+		cout << "ERROR: Type tag of object " << b << " is not set as used" << endl;
+		error = true;
+	}
+	int64_t idx = -1;
+	while(typeTag[++idx] >= 0);
+	if(-idx*HEAP_INTEGER_LENGTH != typeTag[idx]) {
+		cout << "ERROR: Pointer to TypeDescriptor of UsedBlock " << b << " seems to be wrong. Expected sentinel " <<
+				-idx << " and real " << typeTag[idx] << endl;
+		error = true;
+	}
+	return !error;
+}
+
 void Heap::initHeap() {
 	FreeBlock *rootBlock = (FreeBlock*)heap;
 	rootBlock->length = HEAP_SIZE;

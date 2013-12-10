@@ -23,9 +23,28 @@ typedef uint32_t pointer_offset;
 #define MIN_BLOCK_SIZE 16 // Bytes
 #define BLOCK_ALIGN 8 // Bytes
 
+#define TYPE_DESCRIPTOR(block) ((uint64_t*)(block->used.typeTag.scal&~3))
+#define IS_USED(block) (block->used.typeTag.scal&1)
+#define BLOCK_LENGTH(block) (IS_USED(block) ? TYPE_DESCRIPTOR(block)[0] : block->free.length)
+
+union PointerOrScalar {
+	int64_t* ptr;
+	int64_t scal;
+};
+
 struct FreeBlock {
 	uint64_t length;
 	FreeBlock *next;
+};
+
+struct UsedBlock {
+	PointerOrScalar typeTag;
+	int64_t* data;
+};
+
+union Block {
+	FreeBlock free;
+	UsedBlock used;
 };
 
 class Heap {
@@ -45,6 +64,8 @@ private:
 	void setTypeTag(FreeBlock* b, TypeDescriptor* desc);
 	void markBlock(uint64_t* rootBlock);
 	void sweep();
+	bool validateTypeTag(UsedBlock* b);
+	TypeDescriptor* getByBlock(UsedBlock* b);
 public:
 	Heap();
 	virtual ~Heap();
@@ -53,6 +74,7 @@ public:
 	void registerType(TypeDescriptor *descriptor);
 	void addRoot(uint64_t* root);
 	uint64_t getFreeBytes();
+	void dumpHeap();
 };
 
 

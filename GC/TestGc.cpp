@@ -20,7 +20,7 @@ uint64_t TestGc::run() {
 	runs = 0;
 	errors = 0;
 
-	testGc2();
+	testGc1();
 
 	return errors;
 }
@@ -43,6 +43,7 @@ void TestGc::testGc2() {
 	sl->first = sn;
 	h->addRoot((uint64_t*)sl);
 	sl->first = NULL;
+	h->dumpHeap();
 	h->gc();
 	int64_t freeAfter = (int64_t)h->getFreeBytes();
 	if(freeBefore != h->getFreeBytes()) {
@@ -98,6 +99,7 @@ void TestGc::testGc1() {
 		s = s->next;
 	}
 	cout << sl->toString() << endl;
+	h->dumpHeap();
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 	cout << "End" << endl;
 
