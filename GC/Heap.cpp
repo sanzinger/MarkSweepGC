@@ -45,7 +45,6 @@ void Heap::markBlock(UsedBlock* cur) {
 		int64_t off = GET_OFFSET(cur);
 
 		if(off >= 0) {
-			cout << "advance" << endl;
 			// pointer to the pointer of the next block (in current block)
 			padr = POINTER_ADDRESS(cur, off);
 			p = OBJECT_TO_BLOCK(*padr);
@@ -81,7 +80,6 @@ void Heap::sweep() {
 		bool isMarked = IS_MARKED(bUsed);
 		if(isUsed && !isMarked) {
 			freeBlock(bUsed, NULL);
-			cout << "free Block";
 		}
 		if(isUsed && isMarked) {
 			dataBetween = true;
@@ -101,7 +99,6 @@ void Heap::sweep() {
 			}
 		}
 		b= NEXT_BLOCK(b);
-		cout << endl;
 	}
 }
 
@@ -124,7 +121,7 @@ void* Heap::alloc(string typeId) {
 		splitBlock(firstFitBlock, requiredSize);
 		useBlock(firstFitBlock);
 		setTypeTag(firstFitBlock, type);
-		cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
+		//cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
 		return (void*)((uint64_t)firstFitBlock+HEAP_INTEGER_LENGTH);
 	} else {
 		cout << "WARN: Out of memory" << endl;
