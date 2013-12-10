@@ -25,26 +25,41 @@ uint64_t TestGc::run() {
 	return errors;
 }
 
-void TestGc::testGc2() {
-	runs++;
-
-	cout << "Test GC-2" << endl;
-
-	Heap* h = AppHeap::getInstance();
+void TestGc::setUp() {
+	h = AppHeap::getInstance();
 	StudentList::registerMe(h);
 	StudNode::registerMe(h);
 	LectNode::registerMe(h);
 	Student::registerMe(h);
 	Lecture::registerMe(h);
 	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
+}
+
+void TestGc::testGc3() {
+	runs++;
+	setUp();
+	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	StudNode* sn2 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	sl->first = sn2;
+	h->addRoot((uint64_t*)sl);
+	h->gc();
+	h->dumpHeap();
+}
+void TestGc::testGc2() {
+	runs++;
+	setUp();
+	cout << "Test GC-2" << endl;
+	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
 	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
 	int64_t freeBefore = (int64_t)h->getFreeBytes();
+	StudNode* sn2 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	StudNode* sn = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
-	sl->first = sn;
+	//sl->first = sn;
 	h->addRoot((uint64_t*)sl);
 	//sl->first = NULL;
-	//h->dumpHeap();
 	h->gc();
+	h->dumpHeap();
 	int64_t freeAfter = (int64_t)h->getFreeBytes();
 	if(freeBefore != h->getFreeBytes()) {
 		cout << "ERROR: Free bytes less than before. Changed by " << (freeBefore-freeAfter) << endl;
@@ -99,12 +114,12 @@ void TestGc::testGc1() {
 		s = s->next;
 	}
 	cout << sl->toString() << endl;
-	h->dumpHeap();
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 	cout << "End" << endl;
 
 	h->addRoot((uint64_t*)sl);
 	h->gc();
+	h->dumpHeap();
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 }
 

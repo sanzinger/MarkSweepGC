@@ -15,6 +15,7 @@ private:
 	static Heap* h;
 public:
 	static Heap* getInstance();
+	static void reset();
 };
 
 class LectNode;

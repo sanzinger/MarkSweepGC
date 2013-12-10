@@ -42,7 +42,7 @@ void Heap::markBlock(UsedBlock* cur) {
 
 	for(;;) {
 		ADD_TO_TAG(cur, HEAP_POINTER_LENGTH);
-		int64_t off = *(int64_t*)(cur->typeTag.scal&~0x3);
+		int64_t off = GET_OFFSET(cur);
 
 		if(off >= 0) {
 			cout << "advance" << endl;
@@ -62,7 +62,7 @@ void Heap::markBlock(UsedBlock* cur) {
 			}
 			p = cur;
 			cur = prev;
-			off = *(int64_t*)(cur->typeTag.scal&~0x3);
+			off = GET_OFFSET(cur);
 			padr = POINTER_ADDRESS(cur, off);
 			prev = OBJECT_TO_BLOCK(*padr);
 			*padr = BLOCK_TO_OBJECT(p);
@@ -71,55 +71,48 @@ void Heap::markBlock(UsedBlock* cur) {
 }
 
 void Heap::sweep() {
-	uint64_t* cur = (uint64_t*)heap;
-	uint64_t* heapEnd = (uint64_t*)(heap+HEAP_SIZE);
-
 	FreeBlock* lastFreeBlock = NULL;
 	bool dataBetween = false;
-
-	cout << cur <<" "<<heapEnd << endl;
-	while(cur < heapEnd) {
-		bool isFree = !(*cur & 0x1);
-		bool isUnmarked = !(*cur & 0x2);
-		cout << "Block(" << (uint64_t)cur-(uint64_t)heap << "): isFree=" << isFree << ", isUnmarked=" << isUnmarked;
-		if(!isFree && isUnmarked) {
-			freeBlock(cur, NULL);
+	Block* b = (Block*)heap;
+	while(b < (Block*)(&heap[HEAP_SIZE])) {
+		UsedBlock* bUsed = &b->used;
+		FreeBlock* bFree = &b->free;
+		bool isUsed = IS_USED(b);
+		bool isMarked = IS_MARKED(bUsed);
+		if(isUsed && !isMarked) {
+			freeBlock(bUsed, NULL);
 			cout << "free Block";
 		}
-
-		if(isFree || isUnmarked) {
+		if(isUsed && isMarked) {
+			dataBetween = true;
+			UNMARK(bUsed);
+		} else {
 			if(dataBetween) {
 				dataBetween = false;
 				if(lastFreeBlock != NULL) {
-					lastFreeBlock->next = (FreeBlock*)cur;
+					lastFreeBlock->next = bFree;
 				}
 				lastFreeBlock = NULL;
 			}
-
 			if(lastFreeBlock != NULL) {
-				merge(lastFreeBlock, (FreeBlock*)cur);
+				merge(lastFreeBlock, bFree);
 			} else {
-				lastFreeBlock = (FreeBlock*)cur;
+				lastFreeBlock = bFree;
 			}
-
-			cur = (uint64_t*)((uint64_t)cur+8+*cur);
-		} else {
-			dataBetween = true;
-			uint64_t* typeTagAdr = (uint64_t*)(*cur & ~0x3);
-			cur = (uint64_t*)((uint64_t)cur+8+*typeTagAdr);
 		}
+		b= NEXT_BLOCK(b);
 		cout << endl;
 	}
 }
 
-void Heap::freeBlock(uint64_t* block, FreeBlock* next) {
-	uint64_t* typeTagAdr = (uint64_t*)(*block & ~0x3);
-	int64_t size = *typeTagAdr;
-
-	*block = size & ~0x3;
-	*(block+1) = (uint64_t)next;
-	if(block < (uint64_t*)firstFreeBlock) {
-		firstFreeBlock = (FreeBlock*)block;
+void Heap::freeBlock(UsedBlock* usedBlock, FreeBlock* next) {
+	Block* block = (Block*)usedBlock;
+	uint64_t size = *TYPE_DESCRIPTOR(block);
+	usedBlock->typeTag.scal &= ~1;
+	block->free.length = size;
+	block->free.next = next;
+	if((uint64_t)block < (uint64_t)firstFreeBlock) {
+		firstFreeBlock = &block->free;
 	}
 }
 
@@ -192,7 +185,7 @@ void Heap::merge(FreeBlock *a, FreeBlock *b) {
 	validateFreeBlock(b);
 
 	FreeBlock *temp = b->next;
-	a->length += MIN_BLOCK_SIZE + b->length;
+	a->length += b->length;
 	a->next = temp;
 }
 

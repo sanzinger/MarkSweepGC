@@ -17,6 +17,11 @@
 
 Heap* AppHeap::h = NULL;
 
+void AppHeap::reset() {
+	delete h;
+	h = NULL;
+}
+
 Heap* AppHeap::getInstance() {
 	if(h == NULL) {
 		h = new Heap();

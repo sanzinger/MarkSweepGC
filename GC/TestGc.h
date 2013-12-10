@@ -20,10 +20,13 @@
 
 class TestGc {
 private:
+	Heap* h;
 	uint64_t runs;
 	uint64_t errors;
 	void testGc1();
 	void testGc2();
+	void testGc3();
+	void setUp();
 public:
 	uint64_t run();
 };
