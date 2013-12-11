@@ -32,7 +32,30 @@ void TestGc::setUp() {
 	LectNode::registerMe(h);
 	Student::registerMe(h);
 	Lecture::registerMe(h);
-	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
+}
+
+void TestGc::testGc5() {
+	runs++;
+	setUp();
+	StudNode* sn1 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+
+}
+
+void TestGc::testGc4() {
+	runs++;
+	setUp();
+	StudNode* sn1 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	StudNode* sn2 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	StudNode* sn3 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	StudNode* sn4 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
+	h->addRoot(sn4);
+	h->gc();
+	h->dumpHeap();
+	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	StudentList* sl2 = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	StudentList* sl3 = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	StudentList* sl4 = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	h->dumpHeap();
 }
 
 void TestGc::testGc3() {
@@ -42,7 +65,10 @@ void TestGc::testGc3() {
 	new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	StudNode* sn2 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	sl->first = sn2;
-	h->addRoot((uint64_t*)sl);
+	h->addRoot(sl);
+	h->gc();
+	h->dumpHeap();
+	h->removeRoot(sl);
 	h->gc();
 	h->dumpHeap();
 }
@@ -56,7 +82,7 @@ void TestGc::testGc2() {
 	StudNode* sn2 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	StudNode* sn = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
 	//sl->first = sn;
-	h->addRoot((uint64_t*)sl);
+	h->addRoot(sl);
 	//sl->first = NULL;
 	h->gc();
 	h->dumpHeap();
@@ -80,8 +106,8 @@ void TestGc::testGc1() {
 	Lecture::registerMe(h);
 	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
 	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
+	h->addRoot(sl);
 
-	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
 	Lecture* lectures[LECTURE_AMT];
 	int i = 0;
 	for(i=0; i<LECTURE_AMT; i++) {
@@ -90,9 +116,10 @@ void TestGc::testGc1() {
 		l->id = i;
 		l->semester = 3;
 		lectures[i] = l;
+		h->addRoot(l);
 	}
 	srand(1);
-	for(i=0; i<50; i++) {
+	for(i=0; i<500000; i++) {
 		Student* s = new (h->alloc(Student::TYPE_NAME)) Student();
 		strcpy(s->name, "Student ______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________");
 		s->id = i;
@@ -105,21 +132,19 @@ void TestGc::testGc1() {
 		for(j=0; j<LECTURE_AMT; j++) {
 			s->remove(lectures[rand()%LECTURE_AMT]);
 		}
-	}
-	StudNode* s = sl->first;
-	while(s != NULL) {
-		if(rand()%2==0) { // Remove one half
-			sl->remove(s->stud);
+		StudNode* sn = sl->first;
+		while(rand()%100 < 80 && sn != NULL) {
+			sn = sn->next;
 		}
-		s = s->next;
+		if(sn != NULL) {
+			sl->remove(sn->stud);
+		}
+		h->gc();
 	}
+	h->dumpHeap();
 	cout << sl->toString() << endl;
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;
+	cout << "Allocated: " << h->allocated << " freed: " << h->freed << " merged: " << h->merged << " gc'd: " << h->gcd << endl;
 	cout << "End" << endl;
-
-	h->addRoot((uint64_t*)sl);
-	h->gc();
-	h->dumpHeap();
-	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 }
 

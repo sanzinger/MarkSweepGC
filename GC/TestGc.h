@@ -26,6 +26,8 @@ private:
 	void testGc1();
 	void testGc2();
 	void testGc3();
+	void testGc4();
+	void testGc5();
 	void setUp();
 public:
 	uint64_t run();

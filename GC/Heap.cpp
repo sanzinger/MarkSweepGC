@@ -14,7 +14,10 @@ using namespace std;
 
 Heap::Heap() {
 	typeDescriptors = new list<TypeDescriptor*>();
-	roots = new list<uint64_t*>();
+	roots = new list<void*>();
+	allocated = 0;
+	freed = 0;
+	gcd = 0;
 	initHeap();
 }
 
@@ -24,14 +27,15 @@ Heap::~Heap() {
 }
 
 void Heap::gc() {
-	list<uint64_t*>::iterator it = roots->begin();
-	list<uint64_t*>::iterator end = roots->end();
-
+	gcd++;
+	list<void*>::iterator it = roots->begin();
+	list<void*>::iterator end = roots->end();
 	for(;it != end; ++it) {
 		markBlock((UsedBlock*)*it);
 	}
-	dumpHeap();
+	//dumpHeap();
 	sweep();
+	validateFirstFreeBlock();
 }
 
 void Heap::markBlock(UsedBlock* cur) {
@@ -78,24 +82,20 @@ void Heap::sweep() {
 		FreeBlock* bFree = &b->free;
 		bool isUsed = IS_USED(b);
 		bool isMarked = IS_MARKED(bUsed);
-		if(isUsed && !isMarked) {
-			freeBlock(bUsed, NULL);
-		}
+
 		if(isUsed && isMarked) {
 			dataBetween = true;
 			UNMARK(bUsed);
 		} else {
-			if(dataBetween) {
-				dataBetween = false;
+			freeBlock(bUsed, NULL);
+			if(!dataBetween && lastFreeBlock != NULL) {
+				merge(lastFreeBlock, bFree);
+			} else {
 				if(lastFreeBlock != NULL) {
 					lastFreeBlock->next = bFree;
 				}
-				lastFreeBlock = NULL;
-			}
-			if(lastFreeBlock != NULL) {
-				merge(lastFreeBlock, bFree);
-			} else {
 				lastFreeBlock = bFree;
+				dataBetween = false;
 			}
 		}
 		b= NEXT_BLOCK(b);
@@ -103,26 +103,50 @@ void Heap::sweep() {
 }
 
 void Heap::freeBlock(UsedBlock* usedBlock, FreeBlock* next) {
+	if(!IS_USED((Block*)usedBlock)) {
+		//cout << "ERROR: Trying to free used block again at " << usedBlock << endl;
+		return;
+	}
+	freed++;
 	Block* block = (Block*)usedBlock;
 	uint64_t size = *TYPE_DESCRIPTOR(block);
 	usedBlock->typeTag.scal &= ~1;
 	block->free.length = size;
 	block->free.next = next;
 	if((uint64_t)block < (uint64_t)firstFreeBlock) {
+		if((uint64_t)&block->free == 0x60a9b8) {
+			cout << "ERROR set firstFreeBlock to 0x60a9b8" << endl;
+		}
 		firstFreeBlock = &block->free;
 	}
 }
 
+void Heap::validateFirstFreeBlock() {
+	Block* b = (Block*)heap;
+	while(b < (Block*)(&heap[HEAP_SIZE])) {
+		bool isUsed = IS_USED(b);
+
+		if(!isUsed && &b->free < firstFreeBlock) {
+			dumpHeap();
+			cout << "ERROR: FirstFreeBlock is not the first " << &b->free << "<" << firstFreeBlock << endl;
+			break;
+		}
+		b= NEXT_BLOCK(b);
+	}
+}
+
 void* Heap::alloc(string typeId) {
+	allocated++;
 	TypeDescriptor* type = getByName(typeId);
 	uint64_t requiredSize = type->getObjectSize();
 	FreeBlock* firstFitBlock = findBlockWithMinSize(requiredSize);
 	if(firstFitBlock != NULL) {
 		splitBlock(firstFitBlock, requiredSize);
+		//cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " firstFitBlock: " << firstFitBlock;
 		useBlock(firstFitBlock);
 		setTypeTag(firstFitBlock, type);
-		//cout << "allocate(" << typeId << "): Required bytes: " << requiredSize << " Free after allocate: " << getFreeBytes() << endl;
-		return (void*)((uint64_t)firstFitBlock+HEAP_INTEGER_LENGTH);
+		//cout << " Free after allocate: " << getFreeBytes() << endl;
+		return BLOCK_TO_OBJECT(firstFitBlock);
 	} else {
 		cout << "WARN: Out of memory" << endl;
 		return NULL;
@@ -148,10 +172,13 @@ uint64_t Heap::getFreeBytes() {
 
 FreeBlock* Heap::findBlockWithMinSize(uint64_t size) {
 	FreeBlock* i = this->firstFreeBlock;
-	while(i != NULL && i->length < size) {
+	while(i != NULL && !(i->length == size || i->length >= size+MIN_BLOCK_SIZE)) {
 		i = i->next;
 	}
-	if(i!=NULL && i->length > size) {
+	if(i!=NULL && i->length >= size) {
+		if(i->next == NULL && i->length < 1000) {
+			cout << "";
+		}
 		return i;
 	} else {
 		return NULL;
@@ -165,13 +192,10 @@ void Heap::useBlock(FreeBlock* b) {
 		prev = i;
 		i = i->next;
 	}
-	if(i == b) {
-		if((uint64_t)i->next > ((uint64_t)heap + sizeof(heap))) {
-			cout << "ERROR i->next=" << i->next << " out of heap [" << (void*)heap << ":" << (void*)((uint64_t)heap + sizeof(heap)) << "]" << endl;
-		}
-		this->firstFreeBlock = i->next;
+	if(prev != NULL) {
+		prev->next = b->next;
 	} else {
-		prev->next = i->next;
+		firstFreeBlock = b->next;
 	}
 	// Set the used bit (bit 0) and all others to 0
 	*(uint64_t*)b = 1;
@@ -180,13 +204,16 @@ void Heap::useBlock(FreeBlock* b) {
 void Heap::merge(FreeBlock *a, FreeBlock *b) {
 	validateFreeBlock(a);
 	validateFreeBlock(b);
-
+	merged ++;
 	FreeBlock *temp = b->next;
 	a->length += b->length;
 	a->next = temp;
 }
 
 FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
+	if(block->length == n) {
+		return NULL;
+	}
 	if(n % BLOCK_ALIGN != 0) {
 		cout << "splitBlock(" << block << ", " << n << "): n is not aligned by " << BLOCK_ALIGN << " bytes." << endl;
 		return NULL;
@@ -207,6 +234,9 @@ FreeBlock* Heap::splitBlock(FreeBlock *block, uint64_t n) {
 }
 
 bool Heap::validateFreeBlock(FreeBlock *block) {
+	if(block == NULL) {
+		cout << "ERROR: Cannot validate null block." << endl;
+	}
 	bool result = (*((uint64_t*)block) & 0x1) == 0;
 	if(!result) {
 		cout << "Detected invalid free block at position " << block << endl;
@@ -223,7 +253,9 @@ void Heap::dumpHeap() {
 	Block* b = (Block*)heap;
 	while(b < (Block*)(&heap[HEAP_SIZE])) {
 		bool isUsed = IS_USED(b);
-		std::fprintf(stdout, "    %p(%3ld): ", b, BLOCK_LENGTH(b));
+		std::fprintf(stdout, "    %p(%3ld): ",
+				b,
+				BLOCK_LENGTH(b));
 		cout << "isUsed=" << isUsed << " ";
 		if(isUsed) {
 			bool isMarked = IS_MARKED((&b->used));
@@ -290,6 +322,10 @@ TypeDescriptor* Heap::getByName(string name) {
 	return NULL;
 }
 
-void Heap::addRoot(uint64_t* root) {
-	roots->push_back(root-1);
+void Heap::addRoot(void* root) {
+	roots->push_back(OBJECT_TO_BLOCK(root));
+}
+
+void Heap::removeRoot(void* root) {
+	roots->remove(OBJECT_TO_BLOCK(root));
 }

@@ -24,7 +24,7 @@ typedef uint32_t pointer_offset;
 #define BLOCK_ALIGN 8 // Bytes
 
 #define TYPE_DESCRIPTOR(block) ((int64_t*)((block)->used.typeTag.scal&~3))
-#define IS_USED(block) (block->used.typeTag.scal&1)
+#define IS_USED(block) ((block)->used.typeTag.scal&1)
 #define IS_MARKED(block) ((block)->typeTag.scal&2)
 #define BLOCK_LENGTH(block) (IS_USED(block) ? TYPE_DESCRIPTOR(block)[0] : block->free.length)
 #define NEXT_BLOCK(block) ((Block*)((uint64_t)block+BLOCK_LENGTH(block)))
@@ -59,9 +59,14 @@ union Block {
 class Heap {
 	uint8_t heap[HEAP_SIZE]; // 32 Kilobyte heap
 	FreeBlock* firstFreeBlock;
+public:
+	uint64_t allocated;
+	uint64_t freed;
+	uint64_t gcd;
+	uint64_t merged;
 private:
 	list<TypeDescriptor*> *typeDescriptors;
-	list<uint64_t*> *roots;
+	list<void*> *roots;
 	TypeDescriptor* getByName(string name);
 	void initHeap();
 	FreeBlock *splitBlock(FreeBlock *block, uint64_t n);
@@ -75,13 +80,15 @@ private:
 	void sweep();
 	bool validateTypeTag(UsedBlock* b);
 	TypeDescriptor* getByBlock(UsedBlock* b);
+	void validateFirstFreeBlock();
 public:
 	Heap();
 	virtual ~Heap();
 	void* alloc(string typeId);
 	void gc();
 	void registerType(TypeDescriptor *descriptor);
-	void addRoot(uint64_t* root);
+	void addRoot(void* root);
+	void removeRoot(void* root);
 	uint64_t getFreeBytes();
 	void dumpHeap();
 };
