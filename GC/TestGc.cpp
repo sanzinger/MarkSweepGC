@@ -38,7 +38,8 @@ void TestGc::testGc5() {
 	runs++;
 	setUp();
 	StudNode* sn1 = new (h->alloc(StudNode::TYPE_NAME)) StudNode();
-
+	h->gc();
+	h->dumpHeap();
 }
 
 void TestGc::testGc4() {
@@ -104,6 +105,7 @@ void TestGc::testGc1() {
 	LectNode::registerMe(h);
 	Student::registerMe(h);
 	Lecture::registerMe(h);
+	uint64_t bytesBefore = h->getFreeBytes();
 	cout << "Heap free bytes: " << h->getFreeBytes() << endl;
 	StudentList* sl = new (h->alloc(StudentList::TYPE_NAME)) StudentList();
 	h->addRoot(sl);
@@ -145,6 +147,14 @@ void TestGc::testGc1() {
 	cout << sl->toString() << endl;
 	cout << "FreeBytes: " << h->getFreeBytes() << endl;
 	cout << "Allocated: " << h->allocated << " freed: " << h->freed << " merged: " << h->merged << " gc'd: " << h->gcd << endl;
+	h->removeRoot(sl);
+	for(i=0; i<LECTURE_AMT; i++) {
+		h->removeRoot(lectures[i]);
+	}
+	h->gc();
+	if(bytesBefore != h->getFreeBytes()) {
+		cout << "ERROR: Heap is not free before=" << bytesBefore << " after=" << h->getFreeBytes() << endl;
+	}
 	cout << "End" << endl;
 }
 
