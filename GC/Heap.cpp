@@ -253,33 +253,38 @@ void Heap::dumpHeap() {
 	Block* b = (Block*)heap;
 	while(b < (Block*)(&heap[HEAP_SIZE])) {
 		bool isUsed = IS_USED(b);
-		std::fprintf(stdout, "    %p(%3ld): ",
+		std::fprintf(stdout, "    %p(%4ld): ",
 				b,
 				BLOCK_LENGTH(b));
-		cout << "isUsed=" << isUsed << " ";
 		if(isUsed) {
 			bool isMarked = IS_MARKED((&b->used));
-			cout << " isMarked=" << isMarked << " ";
 			if(validateTypeTag(&b->used)) { // If typetag is valid
 				TypeDescriptor* td = getByBlock(&b->used);
-				cout << td->getName();
-				cout << " first 8 bytes: " << (uint64_t)*(&b->used.data);
-				cout << " Pointers: ";
+				std::fprintf(stdout, "%-12s M=%d *b=0x%x Pointers=[",
+						td->getName().c_str(),
+						isMarked,
+						&b->used.data);
+				/*
+				cout << "M=" << isMarked << " *b=" << (void*)*(&b->used.data);
+				cout << " Pointers: ";*/
 				int64_t* desc = (int64_t*)td->getDescriptor();
 				uint64_t elem = 1;
 				int64_t offset = *(desc+elem);
 				while(offset >= 0) {
-					cout << " " << offset << " " << &b->used.data+offset << ",";
+					fprintf(stdout, "%d(0x%x)", offset, &b->used.data+offset);
 					elem++;
 					offset = *(desc+elem);
+					if(offset >= 0) {
+						cout << ", ";
+					}
 				}
-
+				cout << "]";
 			} else {
 				cout << endl << "ERROR: Invalid TypeTag, aborting." << endl;
 				return;
 			}
 		} else {
-			cout << "<FreeBlock> " << " next=" << b->free.next << " ";
+			cout << "<FreeBlock>  next=" << b->free.next << " ";
 		}
 		b= NEXT_BLOCK(b);
 		cout << endl;
