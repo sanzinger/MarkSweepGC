@@ -263,6 +263,17 @@ void Heap::dumpHeap() {
 			if(validateTypeTag(&b->used)) { // If typetag is valid
 				TypeDescriptor* td = getByBlock(&b->used);
 				cout << td->getName();
+				cout << " first 8 bytes: " << (uint64_t)*(&b->used.data);
+				cout << " Pointers: ";
+				uint64_t* desc = (uint64_t*)td->getDescriptor();
+				uint64_t elem = 1;
+				uint64_t offset = *(desc+elem);
+				while(offset >= 0) {
+					cout << " " << offset << " " << &b->used.data+offset << ",";
+					elem++;
+					offset = *(desc+elem);
+				}
+
 			} else {
 				cout << endl << "ERROR: Invalid TypeTag, aborting." << endl;
 				return;
@@ -272,6 +283,8 @@ void Heap::dumpHeap() {
 		}
 		b= NEXT_BLOCK(b);
 		cout << endl;
+		cout << "Total free bytes: " << this->getFreeBytes() << endl;
+		cout << "Total allocated bytes: " << HEAP_SIZE - this->getFreeBytes() << endl;
 	}
 }
 

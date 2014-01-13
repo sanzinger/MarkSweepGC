@@ -121,7 +121,7 @@ void TestGc::testGc1() {
 		h->addRoot(l);
 	}
 	srand(1);
-	for(i=0; i<500000; i++) {
+	for(i=0; i<50; i++) {
 		Student* s = new (h->alloc(Student::TYPE_NAME)) Student();
 		strcpy(s->name, "Student ______________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________");
 		s->id = i;
@@ -141,12 +141,13 @@ void TestGc::testGc1() {
 		if(sn != NULL) {
 			sl->remove(sn->stud);
 		}
-		h->gc();
 	}
 	h->dumpHeap();
-	cout << sl->toString() << endl;
-	cout << "FreeBytes: " << h->getFreeBytes() << endl;
-	cout << "Allocated: " << h->allocated << " freed: " << h->freed << " merged: " << h->merged << " gc'd: " << h->gcd << endl;
+	h->gc();
+	h->dumpHeap();
+	//cout << sl->toString() << endl;
+	//cout << "FreeBytes: " << h->getFreeBytes() << endl;
+	//cout << "Allocated: " << h->allocated << " freed: " << h->freed << " merged: " << h->merged << " gc'd: " << h->gcd << endl;
 	h->removeRoot(sl);
 	for(i=0; i<LECTURE_AMT; i++) {
 		h->removeRoot(lectures[i]);
