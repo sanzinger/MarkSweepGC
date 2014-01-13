@@ -265,9 +265,9 @@ void Heap::dumpHeap() {
 				cout << td->getName();
 				cout << " first 8 bytes: " << (uint64_t)*(&b->used.data);
 				cout << " Pointers: ";
-				uint64_t* desc = (uint64_t*)td->getDescriptor();
+				int64_t* desc = (int64_t*)td->getDescriptor();
 				uint64_t elem = 1;
-				uint64_t offset = *(desc+elem);
+				int64_t offset = *(desc+elem);
 				while(offset >= 0) {
 					cout << " " << offset << " " << &b->used.data+offset << ",";
 					elem++;
@@ -283,9 +283,9 @@ void Heap::dumpHeap() {
 		}
 		b= NEXT_BLOCK(b);
 		cout << endl;
-		cout << "Total free bytes: " << this->getFreeBytes() << endl;
-		cout << "Total allocated bytes: " << HEAP_SIZE - this->getFreeBytes() << endl;
 	}
+	cout << "Total free bytes: " << this->getFreeBytes() << endl;
+			cout << "Total allocated bytes: " << HEAP_SIZE - this->getFreeBytes() << endl;
 }
 
 TypeDescriptor* Heap::getByBlock(UsedBlock* b) {
