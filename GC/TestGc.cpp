@@ -20,7 +20,7 @@ uint64_t TestGc::run() {
 	runs = 0;
 	errors = 0;
 
-	testGc1();
+	testGc4();
 
 	return errors;
 }
