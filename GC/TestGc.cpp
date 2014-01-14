@@ -20,7 +20,7 @@ uint64_t TestGc::run() {
 	runs = 0;
 	errors = 0;
 
-	testGc4();
+	testGc1();
 
 	return errors;
 }
@@ -145,14 +145,12 @@ void TestGc::testGc1() {
 	h->dumpHeap();
 	h->gc();
 	h->dumpHeap();
-	//cout << sl->toString() << endl;
-	//cout << "FreeBytes: " << h->getFreeBytes() << endl;
-	//cout << "Allocated: " << h->allocated << " freed: " << h->freed << " merged: " << h->merged << " gc'd: " << h->gcd << endl;
 	h->removeRoot(sl);
 	for(i=0; i<LECTURE_AMT; i++) {
 		h->removeRoot(lectures[i]);
 	}
 	h->gc();
+	h->dumpHeap();
 	if(bytesBefore != h->getFreeBytes()) {
 		cout << "ERROR: Heap is not free before=" << bytesBefore << " after=" << h->getFreeBytes() << endl;
 	}

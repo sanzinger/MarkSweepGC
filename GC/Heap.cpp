@@ -30,7 +30,7 @@ void Heap::gc() {
 	gcd++;
 	list<void*>::iterator it = roots->begin();
 	list<void*>::iterator end = roots->end();
-	for(;it != end; ++it) {
+	for(;it != end; ++it) { // For each root pointer
 		markBlock((UsedBlock*)*it);
 	}
 	//dumpHeap();
@@ -45,10 +45,10 @@ void Heap::markBlock(UsedBlock* cur) {
 	MARK(cur);
 
 	for(;;) {
-		ADD_TO_TAG(cur, HEAP_POINTER_LENGTH);
-		int64_t off = GET_OFFSET(cur);
+		ADD_TO_TAG(cur, HEAP_POINTER_LENGTH); // Increment the typetag pointer
+		int64_t off = GET_OFFSET(cur); // Get the pointer offset in the type descriptor
 
-		if(off >= 0) {
+		if(off >= 0) { // Advance if the offset is positive or zero
 			// pointer to the pointer of the next block (in current block)
 			padr = POINTER_ADDRESS(cur, off);
 			p = OBJECT_TO_BLOCK(*padr);
@@ -58,7 +58,7 @@ void Heap::markBlock(UsedBlock* cur) {
 				cur = p;
 				MARK(cur);
 			}
-		} else {
+		} else { // Retreat
 			ADD_TO_TAG(cur, off); // Restore tag (off < 0)
 			if(prev == NULL) {
 				return;
@@ -114,9 +114,6 @@ void Heap::freeBlock(UsedBlock* usedBlock, FreeBlock* next) {
 	block->free.length = size;
 	block->free.next = next;
 	if((uint64_t)block < (uint64_t)firstFreeBlock) {
-		if((uint64_t)&block->free == 0x60a9b8) {
-			cout << "ERROR set firstFreeBlock to 0x60a9b8" << endl;
-		}
 		firstFreeBlock = &block->free;
 	}
 }
@@ -157,7 +154,6 @@ void Heap::setTypeTag(FreeBlock* b, TypeDescriptor* desc) {
 	uint64_t* typeTag = (uint64_t*)b;
 	*typeTag = (*typeTag & 0x3);
 	*typeTag |= (uint64_t)desc->getDescriptor() & (~0x3);
-	cout <<"";
 }
 
 uint64_t Heap::getFreeBytes() {
@@ -264,9 +260,6 @@ void Heap::dumpHeap() {
 						td->getName().c_str(),
 						isMarked,
 						&b->used.data);
-				/*
-				cout << "M=" << isMarked << " *b=" << (void*)*(&b->used.data);
-				cout << " Pointers: ";*/
 				int64_t* desc = (int64_t*)td->getDescriptor();
 				uint64_t elem = 1;
 				int64_t offset = *(desc+elem);

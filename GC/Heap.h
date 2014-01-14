@@ -155,6 +155,9 @@ private:
 	 * @brief Returns the type descriptor with the by a block
 	 */
 	TypeDescriptor* getByBlock(UsedBlock* b);
+	/**
+	 * @brief Tests if the first free block is really the first one.
+	 */
 	void validateFirstFreeBlock();
 public:
 	Heap();
